@@ -20,6 +20,14 @@
 		</sql>
 	</install>
 
+	<!-- Runs on uninstall -->
+	<uninstall>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/uninstall/mysql/mysql.sql</file>
+		</sql>
+	</uninstall>
+
+
 	<!-- Runs on update -->
 	<update>
 		<schemas>
