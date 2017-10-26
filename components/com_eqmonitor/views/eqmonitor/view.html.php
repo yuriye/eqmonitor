@@ -18,4 +18,12 @@ defined('_JEXEC') or die;
  */
 class EqmonitorViewEqmonitor extends JViewLegacy
 {
+	function display ($tpl = null)
+	{
+		$model = $this->getModel();
+		$rows = $model->getItem();
+		$this->assignRef('rows',$rows);
+
+		parent::display($tpl);
+	}
 }
