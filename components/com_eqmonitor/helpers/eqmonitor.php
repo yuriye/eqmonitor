@@ -24,13 +24,11 @@ class EqmonitorSiteHelper
 		$db = JFactory::getDbo();
 		$delquery = 'truncate #__eqm_queue_item;';
 		$db->setQuery($delquery)->execute();
-
-
 		$query = 'select * from #__eqm_filial order by filial';
-
 		$rows = $db->setQuery($query)->loadObjectList();
-		foreach ($rows as $row) {
 
+		foreach ($rows as $row) {
+//			$json = $row->uuid
 		}
 
 
