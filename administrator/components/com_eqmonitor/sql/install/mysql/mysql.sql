@@ -3,8 +3,8 @@ DROP TABLE IF EXISTS `#__eqm_filial`;
 
 CREATE TABLE `#__eqm_queue_item` (
   `id`              INT(11) NOT NULL AUTO_INCREMENT,
-  `filial`          VARCHAR(128)  NOT NULL,
-  `ticket`          VARCHAR(15) NOT NULL,
+  `filial`          VARCHAR(128),
+  `ticket`          VARCHAR(15),
   `priority`        VARCHAR(10),
   `queued_at`       DATETIME,
   `call_time`       DATETIME,

@@ -20,7 +20,7 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 {
 	private $db = null;
 
-	public function __construct()
+	function __construct()
 	{
 		parent::__construct();
 		$this->db = $this->getDbo();
@@ -58,6 +58,7 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 		$query = 'SELECT queued_at FROM #__eqm_queue_item ORDER BY filial, queued_at LIMIT 1';
 		$this->db->setQuery($query);
 		$rows = $this->db->loadObjectList();
+		if (count($rows) == 0) return true;
 
 		$fmt  = 'Y-m-d h:i:s';
 		$tz   = new DateTimeZone('+12:00');
@@ -78,14 +79,27 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 
 	function copyDataFromEQWS()
 	{
-		$delquery = 'truncate #__eqm_queue_item;';
-		$this->db->setQuery($delquery)->execute();
+
+		$this->db->setQuery('delete from #__eqm_queue_item')->execute();
 
 		$query = 'SELECT * FROM #__eqm_filial ORDER BY filial';
 		$rows  = $this->db->setQuery($query)->loadObjectList();
 
 		$fmt = 'M d, Y h:i:s A';
 		$tz  = new DateTimeZone('+12:00');
+
+		//$sql = 'INSERT IGNORE INTO #__eqm_queue_item (filial,  ticket,  priority,  queued_at,  call_time,  waiting_time,  queue,  service_name,  status,  window_number,  number_of_cases,  created_on) VALUE (:filial, :ticket, :priority, :queued_at, :call_time, :waiting_time, :queue, :service_name, :statuss, :window_number, :number_of_cases, :created_on);';
+		$sql = 'INSERT IGNORE INTO #__eqm_queue_item (filial,  ticket,  priority) VALUES (:filial, :ticket, :priority);';
+		echo $sql;
+		echo '<br><br><br>';
+		print_r($this->db);
+		echo "<br><br><br>";
+		$db = $this->getDbo();
+
+		$stmt = $this->db->prepare($sql);
+		print_r($stmt);
+
+		return;
 
 		foreach ($rows as $row)
 		{
@@ -117,22 +131,27 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				$dt->setTimezone($tz);
 				$dt->setTimestamp($seconds);
 
-				$insertSQL    = "INSERT IGNORE INTO `#__eqm_queue_item` 
-									(filial,  ticket,  priority,  queued_at,  call_time,  waiting_time,  queue,  service_name,  status,  window_number,  number_of_cases,  created_on) VALUES 
-									(:filial, :ticket, :priority, :queued_at, :call_time, :waiting_time, :queue, :service_name, :statuss, :window_number, :number_of_cases, :created_on);";
-				$query = $this->db->prepare($insertSQL);
-				$query->execute(array(
-					':filial' => $row->filial,
-					':ticket' => $prefix . $ticket->clientNum,
-					':priority' => $ticket->priority,
-					':queued_at' => DateTime::createFromFormat($fmt , $ticket->regTime, $tz),
-					':call_time' => $dt,
-					':service_name' => $ticket->serviceName,
-					':status' => $ticket->status,
-					':window_number' => $ticket->cabNum,
-					':number_of_cases' => $ticket->number_of_cases,
-					':created_on' => $ticket->created_on
-				));
+
+				$stmt -> bindParam(':filial', $row->filial);
+				$stmt -> bindParam(':ticket', $prefix . $ticket->clientNum);
+				$stmt -> bindParam(':priority',$ticket->priority);
+				$stmt -> execute();
+				/*$this->db->setQuery($insertSQL)->execute(
+					array(
+						':filial' => $row->filial,
+						':ticket' => $prefix . $ticket->clientNum,
+						':priority' => $ticket->priority));
+						':queued_at' => DateTime::createFromFormat($fmt , $ticket->regTime, $tz),
+						':waiting_time' => 0,
+						':queue' => '',
+						':call_time' => $dt,
+						':service_name' => $ticket->serviceName,
+						':statuss' => $ticket->status,
+						':window_number' => $ticket->cabNum,
+						':number_of_cases' => $ticket->number_of_cases,
+						':created_on' => $ticket->created_on
+					)
+				);*/
 			}
 		}
 	}
