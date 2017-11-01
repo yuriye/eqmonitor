@@ -6,15 +6,15 @@ CREATE TABLE `#__eqm_queue_item` (
   `filial`          VARCHAR(128),
   `ticket`          VARCHAR(15),
   `priority`        VARCHAR(10),
-  `queued_at`       DATETIME,
-  `call_time`       DATETIME,
-  `waiting_time`    DATETIME,
+  `queued_at`       TIMESTAMP,
+  `call_time`       TIMESTAMP,
+  `waiting_time`    TIME,
   `queue`           VARCHAR(128),
   `service_name`    VARCHAR(128),
   `status`          VARCHAR(15),
   `window_number`   VARCHAR(10),
   `number_of_cases` INT(3),
-  `created_on`      DATETIME  NOT NULL COMMENT 'Time the record is created.',
+  `created_on`      TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
 

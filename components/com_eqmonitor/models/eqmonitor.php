@@ -80,26 +80,13 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 	function copyDataFromEQWS()
 	{
 
-		$this->db->setQuery('delete from #__eqm_queue_item')->execute();
+		$this->db->setQuery('DELETE FROM #__eqm_queue_item')->execute();
 
 		$query = 'SELECT * FROM #__eqm_filial ORDER BY filial';
 		$rows  = $this->db->setQuery($query)->loadObjectList();
 
 		$fmt = 'M d, Y h:i:s A';
 		$tz  = new DateTimeZone('+12:00');
-
-		//$sql = 'INSERT IGNORE INTO #__eqm_queue_item (filial,  ticket,  priority,  queued_at,  call_time,  waiting_time,  queue,  service_name,  status,  window_number,  number_of_cases,  created_on) VALUE (:filial, :ticket, :priority, :queued_at, :call_time, :waiting_time, :queue, :service_name, :statuss, :window_number, :number_of_cases, :created_on);';
-		$sql = 'INSERT IGNORE INTO #__eqm_queue_item (filial,  ticket,  priority) VALUES (:filial, :ticket, :priority);';
-		echo $sql;
-		echo '<br><br><br>';
-		print_r($this->db);
-		echo "<br><br><br>";
-		$db = $this->getDbo();
-
-		$stmt = $this->db->prepare($sql);
-		print_r($stmt);
-
-		return;
 
 		foreach ($rows as $row)
 		{
@@ -108,8 +95,9 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 
 			foreach ($contentObjs as $ticket)
 			{
+				$queueItem = new stdClass();
+
 				$prefix = '';
-				echo "prefix ======$prefix\n";
 				switch ($ticket->prefix)
 				{
 					case('ru_a'):
@@ -127,31 +115,36 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				}
 
 				$seconds = intval($ticket->startTime / 1000);
-				$dt = new DateTime();
+				$dt      = new DateTime();
 				$dt->setTimezone($tz);
 				$dt->setTimestamp($seconds);
+				$queueItem->filial          = $row->filial;
+				$queueItem->ticket          = $prefix . $ticket->clientNum;
+				$queueItem->priority        = $ticket->priority;
+				$dtQueued = DateTime::createFromFormat($fmt, $ticket->regTime, $tz);
+				echo '$dtQueued=';
+				print_r($dtQueued);
+				echo "<br>";
+				$queueItem->queued_at       = JFactory::getDate($dtQueued->getTimestamp())->toSql(true);
+				echo "<br>";
+				echo '$queueItem->queued_at=';
+				print_r($queueItem->queued_at);
+				echo "<br>";
+				$queueItem->waiting_time    = 0;
+				$queueItem->queue           = '';
+				$queueItem->call_time       = $dt;
+				$queueItem->service_name    = $ticket->serviceName;
+				$queueItem->status          = $ticket->status;
+				$queueItem->window_number   = $ticket->cabNum;
+				$queueItem->number_of_cases = $ticket->additionalInfo->countCases;
+//				$queueItem->created_on      = JFactory::getDate((new DateTime())->getTimestamp(), $tz);
+				$queueItem->created_on      = (new JDate('now'))->setTimezone($tz)->toSQL();
+				echo "<br>";
+				echo '$queueItem->created_on=';
+				print_r($queueItem->created_on);
+				echo "<br>";
 
-
-				$stmt -> bindParam(':filial', $row->filial);
-				$stmt -> bindParam(':ticket', $prefix . $ticket->clientNum);
-				$stmt -> bindParam(':priority',$ticket->priority);
-				$stmt -> execute();
-				/*$this->db->setQuery($insertSQL)->execute(
-					array(
-						':filial' => $row->filial,
-						':ticket' => $prefix . $ticket->clientNum,
-						':priority' => $ticket->priority));
-						':queued_at' => DateTime::createFromFormat($fmt , $ticket->regTime, $tz),
-						':waiting_time' => 0,
-						':queue' => '',
-						':call_time' => $dt,
-						':service_name' => $ticket->serviceName,
-						':statuss' => $ticket->status,
-						':window_number' => $ticket->cabNum,
-						':number_of_cases' => $ticket->number_of_cases,
-						':created_on' => $ticket->created_on
-					)
-				);*/
+				$this->db->insertObject('#__eqm_queue_item',$queueItem);
 			}
 		}
 	}
