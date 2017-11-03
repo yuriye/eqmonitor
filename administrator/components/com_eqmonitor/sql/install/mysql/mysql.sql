@@ -1,8 +1,10 @@
 DROP TABLE IF EXISTS `#__eqm_queue_item`;
 DROP TABLE IF EXISTS `#__eqm_filial`;
+DROP TABLE IF EXISTS `#__eqm_filial_cabs`;
 
 CREATE TABLE `#__eqm_queue_item` (
   `id`              INT(11) NOT NULL AUTO_INCREMENT,
+  `uuid`            VARCHAR(64) NOT NULL,
   `filial`          VARCHAR(128),
   `ticket`          VARCHAR(15),
   `priority`        VARCHAR(10),
@@ -22,33 +24,33 @@ CREATE TABLE `#__eqm_filial` (
   `id`              INT(11) NOT NULL AUTO_INCREMENT,
   `uuid`            VARCHAR(64) NOT NULL,
   `filial`          VARCHAR(128)  NOT NULL,
+  `count`    INT(4) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
 
-INSERT IGNORE INTO `#__eqm_filial` (uuid, filial)
-VALUES
-  ('396138c0-423c-4764-a2ad-3216481b1221', 'Петропавловск-Камчатский, Пограничная, 17'),
-  ('0092f0d7-7e64-4674-a25b-0e2530d91851', 'Петропавловск-Камчатский, Савченко, 23'),
-  ('fc272f42-3607-487d-9093-219bee24d557', 'Петропавловск-Камчатский, Рыбаков, 13'),
-  ('e7469155-86c2-4e38-abc1-9ee62d2aab26', 'Петропавловск-Камчатский, Океанская, 94'),
-  ('e5ccab36-24df-481e-b036-ee8252f3ec01', 'Елизово, Беринга, 9'),
-  ('1fd1f61c-d7db-4cab-af93-d57b030fd855', 'Вилючинск, м-н Центральный, 5');
+CREATE TABLE `#__eqm_filial_cabs` (
+  `id`              INT(11) NOT NULL AUTO_INCREMENT,
+  `uuid`            VARCHAR(64) NOT NULL,
+  `filial`          VARCHAR(128)  NOT NULL,
+  `cab_num`         INT(3) NOT NULL,
+  `status`          VARCHAR(10) NOT NULL,
+  `state`           VARCHAR(10) NOT NULL,
+  `count_of_served` INT(4),
+  `average_service_time` INT(10),
+  `pause_starttime` INT(10),
+  `pause_count`     INT(10),
+  `dayoff`          BOOL
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
 
-INSERT IGNORE INTO `#__eqm_queue_item` (filial, ticket, priority, queued_at,
-                                        call_time, waiting_time, queue, service_name,
-                                        status, window_number, number_of_cases,
-                                        created_on)
+
+INSERT IGNORE INTO `#__eqm_filial` (uuid, filial, count)
 VALUES
-  ('Елизово', 'А23', 'Средний',
-              '2017-10-26 11:22:00', '2017-10-26 11:25:00', '0000-00-00 00:03:00',
-              'Елизово приём', 'Все остальные государственные и муницыпальные услуги', 'Обслуживается',
-              '3', 3, NOW()),
-  ('Елизово', 'А23', 'Средний',
-              '2017-10-26 11:22:00', '2017-10-26 11:25:00', '0000-00-00 00:03:00',
-              'Елизово приём', 'Все остальные государственные и муницыпальные услуги', 'Обслуживается',
-              '1', 1, NOW()),
-  ('Елизово', 'А23', 'Средний',
-              '2017-10-26 11:22:00', '2017-10-26 11:25:00', '0000-00-00 00:03:00',
-              'Елизово приём', 'Все остальные государственные и муницыпальные услуги', 'Обслуживается',
-              '2', 2, NOW());
+  ('396138c0-423c-4764-a2ad-3216481b1221', 'Петропавловск-Камчатский, Пограничная, 17', 19),
+  ('0092f0d7-7e64-4674-a25b-0e2530d91851', 'Петропавловск-Камчатский, Савченко, 23', 15),
+  ('fc272f42-3607-487d-9093-219bee24d557', 'Петропавловск-Камчатский, Рыбаков, 13', 6),
+  ('e7469155-86c2-4e38-abc1-9ee62d2aab26', 'Петропавловск-Камчатский, Океанская, 94', 6),
+  ('e5ccab36-24df-481e-b036-ee8252f3ec01', 'Елизово, Беринга, 9', 8),
+  ('1fd1f61c-d7db-4cab-af93-d57b030fd855', 'Вилючинск, м-н Центральный, 5', 5);
+
 
