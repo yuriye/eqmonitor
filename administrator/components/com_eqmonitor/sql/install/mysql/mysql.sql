@@ -16,7 +16,7 @@ CREATE TABLE `#__eqm_queue_item` (
   `status`          VARCHAR(15),
   `window_number`   VARCHAR(10),
   `number_of_cases` INT(3),
-  `created_on`      TIMESTAMP,
+  `created_on`      INT(15),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
 
@@ -33,13 +33,13 @@ CREATE TABLE `#__eqm_filial_cabs` (
   `uuid`            VARCHAR(64) NOT NULL,
   `filial`          VARCHAR(128)  NOT NULL,
   `cab_num`         INT(3) NOT NULL,
-  `status`          VARCHAR(10) NOT NULL,
+  `status`          VARCHAR(25) NOT NULL,
   `state`           VARCHAR(10) NOT NULL,
   `count_of_served` INT(4),
   `average_service_time` INT(10),
   `pause_starttime` INT(10),
   `pause_count`     INT(10),
-  `dayoff`          BOOL
+  `dayoff`          BOOL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
 

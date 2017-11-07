@@ -33,11 +33,105 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 			$this->copyDataFromEQWS();
 		}
 
-		$query = 'SELECT * FROM #__eqm_queue_item ORDER BY filial, queued_at';
-		$this->db->setQuery($query);
-		$row = $this->db->loadObjectList();
+//		$query = 'SELECT * FROM #__eqm_queue_item ORDER BY filial, queued_at';
+//		$this->db->setQuery($query);
+//		$row = $this->db->loadObjectList();
 
-		return $row;
+		return $this->createRows();
+	}
+
+	function createRows()
+	{
+
+		$objectList = array();
+		$query      = 'SELECT * FROM #__eqm_filial_cabs ORDER BY filial';
+		$this->db->setQuery($query);
+		$sourceObjectList = $this->db->loadObjectList();
+
+		//collecting statistic in $sourceObjectList for every filial
+		foreach ($sourceObjectList as $sourceObject)
+		{
+			$obj = null;
+			if ($sourceObject->dayoff) continue; //Если сегодня окно не работает - пропуск
+			if (!isset($objectList[$sourceObject->filial]))
+			{
+				$obj                               = new stdClass();
+				$obj->filial                       = $sourceObject->filial;
+				$objectList[$sourceObject->filial] = $obj;
+				$obj->cabs                         = 0;
+				$obj->status                       = array();
+				$obj->state                        = array();
+				$obj->countOfServed                = 0;
+				$obj->totalServiceTime             = 0;
+
+			}
+			else
+			{
+				$obj = $objectList[$sourceObject->filial];
+			}
+			$obj->cabs++;
+			if (key_exists($sourceObject->status, $obj->status))
+			{
+				$obj->status[$sourceObject->status]++;
+			}
+			else
+			{
+				$obj->status[$sourceObject->status] = 0;
+			}
+
+			if (key_exists($sourceObject->state, $obj->state))
+			{
+				$obj->state[$sourceObject->state]++;
+			}
+			else
+			{
+				$obj->state[$sourceObject->state] = 0;
+			}
+
+			$obj->countOfServed    += $sourceObject->count_of_served;
+			$obj->totalServiceTime += $sourceObject->average_service_time * $sourceObject->count_of_served;
+		};
+		foreach ($objectList as $obj)
+		{
+			if ($obj->countOfServed == 0)
+			{
+				$obj->averageServiceTime = 0;
+				continue;
+			}
+			$obj->averageServiceTime = $obj->totalServiceTime / $obj->countOfServed;
+			$obj->averageServiceTime = round($obj->averageServiceTime / 60000);
+		}
+
+		$query = 'SELECT filial, status, number_of_cases FROM #__eqm_queue_item ORDER BY filial';
+		$this->db->setQuery($query);
+		$sourceObjectList = $this->db->loadObjectList();
+
+		foreach ($sourceObjectList as $sourceObject)
+		{
+			$obj = null;
+			if (!isset($objectList[$sourceObject->filial])) continue;
+			$obj = $objectList[$sourceObject->filial];
+			if (!isset($obj->clientsWaiting)) {
+				$obj->clientsWaiting = 0;
+			};
+			if (!isset($obj->clientsServing)) {
+				$obj->clientsServing = 0;
+			};
+			if (!isset($obj->numberOfCases)) {
+				$obj->numberOfCases = 0;
+			};
+
+			if ('WAIT' == $sourceObject->status) {
+				$obj->clientsWaiting++;
+			} else {
+				$obj->clientsServing++;
+			};
+
+			$obj->numberOfCases += $sourceObject->number_of_cases;
+		}
+
+
+		return $objectList;
 	}
 
 	/**
@@ -55,18 +149,17 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 			return true;
 		}
 
-		$query = 'SELECT queued_at FROM #__eqm_queue_item ORDER BY filial, queued_at LIMIT 1';
+		$query = 'SELECT created_on FROM #__eqm_queue_item ORDER BY filial, queued_at LIMIT 1';
 		$this->db->setQuery($query);
 		$rows = $this->db->loadObjectList();
 		if (count($rows) == 0) return true;
 
-		$fmt  = 'Y-m-d h:i:s';
-		$tz   = new DateTimeZone('+12:00');
 		$diff = 0;
 		foreach ($rows as $row)
 		{
-			$dt   = DateTime::createFromFormat($fmt, $row->queued_at, $tz);
-			$diff = (new DateTime())->getTimestamp() - $dt->getTimestamp();
+			$now        = (new JDate('now'))->getTimestamp();
+			$created_on = $row->created_on;
+			$diff       = $now - $created_on;
 			break;
 		}
 		if ($period < $diff)
@@ -79,9 +172,8 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 
 	function copyDataFromEQWS()
 	{
-		copyEQItems();
-		copyCabStates();
-
+		$this->copyEQItems();
+		$this->copyCabStates();
 	}
 
 	function copyCabStates()
@@ -99,17 +191,43 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 
 			foreach ($contentObjs as $win)
 			{
-				$winRecord = new stdClass();
-				$winRecord->uuid = $row->uuid;
-				$winRecord->filial = $row->filial;
+				$winRecord          = new stdClass();
+				$winRecord->uuid    = $row->uuid;
+				$winRecord->filial  = $row->filial;
 				$winRecord->cab_num = $win->cabNum;
-				$winRecord->status = $win->status;
-				$winRecord->state = $win->state;
-				$winRecord->count_of_served = $win->countOfServed;
+				switch ($win->status)
+				{
+					case('FREE'):
+						$winRecord->status = 'СВОБОДНО';
+						break;
+					case('SERVED'):
+						$winRecord->status = 'ОБСЛУЖИВАЕТ';
+						break;
+					case('CALL'):
+						$winRecord->status = 'ВЫЗЫВАЕТ';
+						break;
+					case('PAUSE'):
+						$winRecord->status = 'ПЕРЕРЫВ';
+						break;
+					default:
+						$winRecord->status = $win->status;
+				}
+				switch ($win->state)
+				{
+					case('ON'):
+						$winRecord->state = 'ВКЛ';
+						break;
+					case('OFF'):
+						$winRecord->state = 'ВЫКЛ';
+						break;
+					default:
+						$winRecord->state = 'ВЫКЛ';
+				}
+				$winRecord->count_of_served      = $win->countOfServed;
 				$winRecord->average_service_time = $win->averageServiceTime;
-				$winRecord->pause_starttime = $win->pauseStartTime;
-				$winRecord->pause_count = $win->pauseCount;
-				$winRecord->dayoff = $win->dayoff;
+				$winRecord->pause_starttime      = $win->pauseStartTime;
+				$winRecord->pause_count          = $win->pauseCount;
+				$winRecord->dayoff               = $win->dayoff;
 				$this->db->insertObject('#__eqm_filial_cabs', $winRecord);
 			}
 		}
@@ -156,19 +274,12 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				$dt      = new DateTime();
 				$dt->setTimezone($tz);
 				$dt->setTimestamp($seconds);
-				$queueItem->uuid     = $row->uuid;
-				$queueItem->filial   = $row->filial;
-				$queueItem->ticket   = $prefix . $ticket->clientNum;
-				$queueItem->priority = $ticket->priority;
-				$dtQueued            = DateTime::createFromFormat($fmt, $ticket->regTime, $tz);
-				echo '$dtQueued=';
-				print_r($dtQueued);
-				echo "<br>";
-				$queueItem->queued_at = JFactory::getDate($dtQueued->getTimestamp())->toSql(true);
-				echo "<br>";
-				echo '$queueItem->queued_at=';
-				print_r($queueItem->queued_at);
-				echo "<br>";
+				$queueItem->uuid            = $row->uuid;
+				$queueItem->filial          = $row->filial;
+				$queueItem->ticket          = $prefix . $ticket->clientNum;
+				$queueItem->priority        = $ticket->priority;
+				$dtQueued                   = DateTime::createFromFormat($fmt, $ticket->regTime, $tz);
+				$queueItem->queued_at       = JFactory::getDate($dtQueued->getTimestamp())->toSql(true);
 				$queueItem->waiting_time    = 0;
 				$queueItem->queue           = '';
 				$queueItem->call_time       = $dt;
@@ -176,13 +287,7 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				$queueItem->status          = $ticket->status;
 				$queueItem->window_number   = $ticket->cabNum;
 				$queueItem->number_of_cases = $ticket->additionalInfo->countCases;
-//				$queueItem->created_on      = JFactory::getDate((new DateTime())->getTimestamp(), $tz);
-				$queueItem->created_on = (new JDate('now'))->setTimezone($tz)->toSQL();
-				echo "<br>";
-				echo '$queueItem->created_on=';
-				print_r($queueItem->created_on);
-				echo "<br>";
-
+				$queueItem->created_on      = (new DateTime())->getTimestamp();
 				$this->db->insertObject('#__eqm_queue_item', $queueItem);
 			}
 		}
