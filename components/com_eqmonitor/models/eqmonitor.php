@@ -33,10 +33,6 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 			$this->copyDataFromEQWS();
 		}
 
-//		$query = 'SELECT * FROM #__eqm_queue_item ORDER BY filial, queued_at';
-//		$this->db->setQuery($query);
-//		$row = $this->db->loadObjectList();
-
 		return $this->createRows();
 	}
 
@@ -186,7 +182,7 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 
 		foreach ($rows as $row)
 		{
-			$contents    = file_get_contents("http://aismfc.mfc.local/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
+			$contents    = file_get_contents("http://10.200.202.11:8080/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
 			$contentObjs = json_decode($contents);
 
 			foreach ($contentObjs as $win)
@@ -198,16 +194,16 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				switch ($win->status)
 				{
 					case('FREE'):
-						$winRecord->status = 'СВОБОДНО';
+						$winRecord->status = 'FREE';
 						break;
 					case('SERVED'):
-						$winRecord->status = 'ОБСЛУЖИВАЕТ';
+						$winRecord->status = 'SERVED';
 						break;
 					case('CALL'):
-						$winRecord->status = 'ВЫЗЫВАЕТ';
+						$winRecord->status = 'SERVED';
 						break;
 					case('PAUSE'):
-						$winRecord->status = 'ПЕРЕРЫВ';
+						$winRecord->status = 'PAUSE';
 						break;
 					default:
 						$winRecord->status = $win->status;
@@ -215,13 +211,13 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				switch ($win->state)
 				{
 					case('ON'):
-						$winRecord->state = 'ВКЛ';
+						$winRecord->state = 'ON';
 						break;
 					case('OFF'):
-						$winRecord->state = 'ВЫКЛ';
+						$winRecord->state = 'OFF';
 						break;
 					default:
-						$winRecord->state = 'ВЫКЛ';
+						$winRecord->state = 'OFF';
 				}
 				$winRecord->count_of_served      = $win->countOfServed;
 				$winRecord->average_service_time = $win->averageServiceTime;
@@ -242,11 +238,15 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 		$rows  = $this->db->setQuery($query)->loadObjectList();
 
 		$fmt = 'M d, Y h:i:s A';
-		$tz  = new DateTimeZone('+12:00');
-
+//		$tz  = new DateTimeZone('+12:00');
+		$tz =  	new DateTimeZone('Asia/Anadyr');
 		foreach ($rows as $row)
 		{
-			$contents    = file_get_contents("http://aismfc.mfc.local/infobox/getqueue/$row->uuid?queueUuid=all");
+			//$contents    = file_get_contents("http://aismfc.mfc.local/infobox/getqueue/$row->uuid?queueUuid=all");
+			$contents    = file_get_contents("http://10.200.202.11:8080/infobox/getqueue/$row->uuid?queueUuid=all");
+			if(!$contents) {
+				echo "По филиалу \"$row->filial\" информация не доступна.<br/>";
+			}
 			$contentObjs = json_decode($contents);
 
 			foreach ($contentObjs as $ticket)

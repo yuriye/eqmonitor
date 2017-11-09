@@ -33,23 +33,21 @@ echo $layout->render($data);
 
 <!--Подключаем css-->
 <link rel="stylesheet" type="text/css" href="/components/com_eqmonitor/css/eqm.css">
-<!--Это код таблицы с круглыми краями-->
-<div id="v1">
-	<div><b></b></div><div><b><i><q></q></i></b></div>
-	<div><b><i></i></b></div><div><b></b></div><div><b></b></div>
-	<div>
-		<!--Это таблица где выводятся данные из базы-->
-		<table>
-			<!--Первый цикл который выведет нам данные-->
-			<?php foreach ($this->rows as $row )
-			    {
-				// Проверка опубликован раздел или нет
-				//echo '<tr> <td>'.$row->filial.'</td> <td>'.$row->ticket.'</td> </tr>';
-                    print_r($row);
-                    echo '</br></br>';
-            }?>
-		</table>
-	</div>
-	<div><b></b></div><div><b></b></div><div><b><i></i></b></div>
-	<div><b><i><q></q></i></b></div><div><b></b></div>
+<div class="item-page">
+    <h3 class="mfch">
+        Состояние электронной очереди в филиалах </h3>
+	<?php foreach ($this->rows as $row): ?>
+        <div class="filial">
+			<?php
+			echo "<b>$row->filial</b><br/>";
+			//echo "Всего окон: $row->cabs, работает окон: {$row->state['ON']}<br/>";
+			echo "Работает окон: {$row->state['ON']}<br/>";
+			$serving = $row->state['ON'] < $row->clientsServing ? $row->state['ON'] : $row->clientsServing;
+			if (isset($row->clientsServing)) echo "сейчас обслуживается $serving чел.<br/>";
+			if (isset($row->clientsWaiting)) echo "ожидают обслуживания $row->clientsWaiting чел.<br/>";
+			echo "Среднее время обслуживания $row->averageServiceTime мин.<br/>";
+			//print_r($row);
+			echo '<br/>'; ?>
+        </div>
+	<?php endforeach ?>
 </div>
