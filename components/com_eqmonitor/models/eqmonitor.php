@@ -98,7 +98,7 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 			$obj->averageServiceTime = round($obj->averageServiceTime / 60000);
 		}
 
-		$query = 'SELECT filial, status, number_of_cases FROM #__eqm_queue_item ORDER BY filial';
+		$query = 'SELECT * FROM #__eqm_queue_item ORDER BY filial';
 		$this->db->setQuery($query);
 		$sourceObjectList = $this->db->loadObjectList();
 
@@ -117,8 +117,12 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				$obj->numberOfCases = 0;
 			};
 
-			if ('WAIT' == $sourceObject->status) {
-				$obj->clientsWaiting++;
+			if ('WAIT' == $sourceObject->status)
+			{
+				if (!$sourceObject->remote_reg)
+				{
+					$obj->clientsWaiting++;
+				}
 			} else {
 				$obj->clientsServing++;
 			};
@@ -182,6 +186,7 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 
 		foreach ($rows as $row)
 		{
+			//$contents    = file_get_contents("http://aismfc.mfc.local/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
 			$contents    = file_get_contents("http://10.200.202.11:8080/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
 			$contentObjs = json_decode($contents);
 
@@ -281,6 +286,7 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				$dtQueued                   = DateTime::createFromFormat($fmt, $ticket->regTime, $tz);
 				$queueItem->queued_at       = JFactory::getDate($dtQueued->getTimestamp())->toSql(true);
 				$queueItem->waiting_time    = 0;
+				$queueItem->remote_reg       = $ticket->remoteReg;
 				$queueItem->queue           = '';
 				$queueItem->call_time       = $dt;
 				$queueItem->service_name    = $ticket->serviceName;

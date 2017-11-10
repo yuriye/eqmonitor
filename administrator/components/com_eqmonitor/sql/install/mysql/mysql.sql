@@ -10,6 +10,7 @@ CREATE TABLE `#__eqm_queue_item` (
   `priority`        VARCHAR(10),
   `queued_at`       TIMESTAMP,
   `call_time`       TIMESTAMP,
+  `remote_reg`      BOOL,
   `waiting_time`    TIME,
   `queue`           VARCHAR(128),
   `service_name`    VARCHAR(128),

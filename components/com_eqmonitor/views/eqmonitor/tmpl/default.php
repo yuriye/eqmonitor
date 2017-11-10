@@ -43,8 +43,8 @@ echo $layout->render($data);
 			//echo "Всего окон: $row->cabs, работает окон: {$row->state['ON']}<br/>";
 			echo "Работает окон: {$row->state['ON']}<br/>";
 			$serving = $row->state['ON'] < $row->clientsServing ? $row->state['ON'] : $row->clientsServing;
-			if (isset($row->clientsServing)) echo "сейчас обслуживается $serving чел.<br/>";
-			if (isset($row->clientsWaiting)) echo "ожидают обслуживания $row->clientsWaiting чел.<br/>";
+			if (isset($row->clientsServing)) echo "Сейчас обслуживается $serving чел.<br/>";
+			if (isset($row->clientsWaiting)) echo "Ожидают обслуживания $row->clientsWaiting чел.<br/>";
 			echo "Среднее время обслуживания $row->averageServiceTime мин.<br/>";
 			//print_r($row);
 			echo '<br/>'; ?>
