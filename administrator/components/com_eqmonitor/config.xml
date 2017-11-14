@@ -9,4 +9,11 @@
 			   section="component">
 		</field>
 	</fieldset>
+	<fieldset name="options" label="COM_EQMONITOR_OPTIONS" description="COM_EQMONITOR_OPTIONS_DESC">
+		<field name="baseurl"
+			   type="text"
+			   label="Base URL"
+			   component="com_eqmonitor">
+		</field>
+	</fieldset>
 </config>

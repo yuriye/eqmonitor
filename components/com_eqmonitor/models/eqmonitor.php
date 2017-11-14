@@ -20,10 +20,15 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 {
 	private $db = null;
 
+	private $baseurl = '';
+
 	function __construct()
 	{
 		parent::__construct();
 		$this->db = $this->getDbo();
+
+		$componentParams = JComponentHelper::getParams('com_eqmonitor');
+		$this->baseurl = $componentParams->get('baseurl', '10.200.202.11:8080');
 	}
 
 	function getItem()
@@ -109,7 +114,6 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 			}
 			$filial->numberOfCases += $dbEqItem->number_of_cases;
 			$filial->totalWaitingTime += $dbEqItem->waiting_time;
-
 		}
 
 		foreach ($filialList as $filial)
@@ -119,9 +123,18 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				$filial->averageServiceTime = 0;
 				continue;
 			}
-			$filial->averageServiceTime = $filial->totalServiceTime / $filial->countOfServed;
+			$filial->averageServiceTime = 0;
+			if ($filial->countOfServed > 0)
+			{
+				$filial->averageServiceTime = $filial->totalServiceTime / $filial->countOfServed;
+			}
 			$filial->averageServiceTime = round($filial->averageServiceTime / 60000);
-			$filial->averageWaitingTime = round(($filial->totalWaitingTime / $filial->clientsServing) / 60);
+
+			$filial->averageWaitingTime = 0;
+			if ($filial->clientsServing > 0)
+			{
+				$filial->averageWaitingTime = round(($filial->totalWaitingTime / $filial->clientsServing) / 60);
+			}
 		}
 
 		return $filialList;
@@ -180,7 +193,8 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 		foreach ($rows as $row)
 		{
 			//$contents    = file_get_contents("http://aismfc.mfc.local/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
-			$contents    = file_get_contents("http://10.200.202.11:8080/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
+			//$contents    = file_get_contents("http://10.200.202.11:8080/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
+			$contents    = file_get_contents("http://$this->baseurl/infobox/getwindow/byqueue/$row->uuid?queueUuid=all");
 			$contentObjs = json_decode($contents);
 
 			foreach ($contentObjs as $win)
@@ -245,7 +259,9 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 		foreach ($rows as $row)
 		{
 			//$contents    = file_get_contents("http://aismfc.mfc.local/infobox/getqueue/$row->uuid?queueUuid=all");
-			$contents    = file_get_contents("http://10.200.202.11:8080/infobox/getqueue/$row->uuid?queueUuid=all");
+			//$contents    = file_get_contents("http://10.200.202.11:8080/infobox/getqueue/$row->uuid?queueUuid=all");
+			$contents    = file_get_contents("http://$this->baseurl/infobox/getqueue/$row->uuid?queueUuid=all");
+
 			if(!$contents) {
 				echo "По филиалу \"$row->filial\" информация не доступна.<br/>";
 			}
