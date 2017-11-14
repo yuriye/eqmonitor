@@ -8,10 +8,11 @@ CREATE TABLE `#__eqm_queue_item` (
   `filial`          VARCHAR(128),
   `ticket`          VARCHAR(15),
   `priority`        VARCHAR(10),
-  `queued_at`       TIMESTAMP,
+  `queued_at`       INT(15),
   `call_time`       TIMESTAMP,
+  `start_time`      INT(15),
   `remote_reg`      BOOL,
-  `waiting_time`    TIME,
+  `waiting_time`    INT(15),
   `queue`           VARCHAR(128),
   `service_name`    VARCHAR(128),
   `status`          VARCHAR(15),
@@ -25,7 +26,7 @@ CREATE TABLE `#__eqm_filial` (
   `id`              INT(11) NOT NULL AUTO_INCREMENT,
   `uuid`            VARCHAR(64) NOT NULL,
   `filial`          VARCHAR(128)  NOT NULL,
-  `count`    INT(4) NOT NULL,
+  `cabs`    INT(4) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
 
@@ -45,7 +46,7 @@ CREATE TABLE `#__eqm_filial_cabs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1;
 
 
-INSERT IGNORE INTO `#__eqm_filial` (uuid, filial, count)
+INSERT IGNORE INTO `#__eqm_filial` (uuid, filial, cabs)
 VALUES
   ('396138c0-423c-4764-a2ad-3216481b1221', 'Петропавловск-Камчатский, Пограничная, 17', 19),
   ('0092f0d7-7e64-4674-a25b-0e2530d91851', 'Петропавловск-Камчатский, Савченко, 23', 15),

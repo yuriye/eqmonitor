@@ -38,100 +38,93 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 
 	function createRows()
 	{
+		$query = "SELECT * FROM #__eqm_filial ORDER BY filial";
+		$this->db->setQuery($query);
+		$dbFilials = $this->db->loadObjectList();
+		$filialList = array();
+		foreach ($dbFilials as $dbFilial) {
+			$filial                               = new stdClass();
+			$filial->filial                       = $dbFilial->filial;
+			$filial->cabs                         = $dbFilial->cabs;
+			$filial->status                       = array();
+			$filial->state                        = array();
+			$filial->countOfServed                = 0;
+			$filial->totalServiceTime             = 0;
+			$filial->totalWaitingTime             = 0;
+			$filial->numberOfCases = 0;
+			$filial->clientsServing = 0;
+			$filial->clientsWaiting = 0;
+			$filial->state['ON'] = 0;
+			$filial->state['PAUSE'] = 0;
+			$filial->state['OFF'] = 0;
 
-		$objectList = array();
+			$filialList[$dbFilial->filial] = $filial;
+		}
+
 		$query      = 'SELECT * FROM #__eqm_filial_cabs ORDER BY filial';
 		$this->db->setQuery($query);
-		$sourceObjectList = $this->db->loadObjectList();
+		$dbCabList = $this->db->loadObjectList();
 
-		//collecting statistic in $sourceObjectList for every filial
-		foreach ($sourceObjectList as $sourceObject)
+		//collecting statistics in $dbFilialList for the each filial
+		foreach ($dbCabList as $dbCab)
 		{
 			$obj = null;
-			if ($sourceObject->dayoff) continue; //Если сегодня окно не работает - пропуск
-			if (!isset($objectList[$sourceObject->filial]))
-			{
-				$obj                               = new stdClass();
-				$obj->filial                       = $sourceObject->filial;
-				$objectList[$sourceObject->filial] = $obj;
-				$obj->cabs                         = 0;
-				$obj->status                       = array();
-				$obj->state                        = array();
-				$obj->countOfServed                = 0;
-				$obj->totalServiceTime             = 0;
+			if ($dbCab->dayoff === TRUE) continue; //Если сегодня окно не работает - пропуск
 
-			}
-			else
-			{
-				$obj = $objectList[$sourceObject->filial];
-			}
-			$obj->cabs++;
-			if (key_exists($sourceObject->status, $obj->status))
-			{
-				$obj->status[$sourceObject->status]++;
-			}
-			else
-			{
-				$obj->status[$sourceObject->status] = 0;
-			}
+			$filial = $filialList[$dbCab->filial];
 
-			if (key_exists($sourceObject->state, $obj->state))
-			{
-				$obj->state[$sourceObject->state]++;
-			}
-			else
-			{
-				$obj->state[$sourceObject->state] = 0;
-			}
+			if (!key_exists($dbCab->status, $filial->status))
+				$filial->status[$dbCab->status] = 0;
+			$filial->status[$dbCab->status]++;
 
-			$obj->countOfServed    += $sourceObject->count_of_served;
-			$obj->totalServiceTime += $sourceObject->average_service_time * $sourceObject->count_of_served;
-		};
-		foreach ($objectList as $obj)
-		{
-			if ($obj->countOfServed == 0)
-			{
-				$obj->averageServiceTime = 0;
-				continue;
-			}
-			$obj->averageServiceTime = $obj->totalServiceTime / $obj->countOfServed;
-			$obj->averageServiceTime = round($obj->averageServiceTime / 60000);
+			if (!key_exists($dbCab->state, $filial->state))
+				$filial->state[$dbCab->state] = 0;
+			$filial->state[$dbCab->state]++;
+
+			//Do not process if the object '$filial' is in an inconsistent state.
+			if ('OFF' === $filial->state[$dbCab->state] && 'FREE' !== $filial->status[$dbCab->status]) continue;
+
+			$filial->countOfServed    += $dbCab->count_of_served;
+			$filial->totalServiceTime += $dbCab->average_service_time * $dbCab->count_of_served;
 		}
 
 		$query = 'SELECT * FROM #__eqm_queue_item ORDER BY filial';
 		$this->db->setQuery($query);
-		$sourceObjectList = $this->db->loadObjectList();
+		$dbEqItemList = $this->db->loadObjectList();
 
-		foreach ($sourceObjectList as $sourceObject)
+		foreach ($dbEqItemList as $dbEqItem)
 		{
-			$obj = null;
-			if (!isset($objectList[$sourceObject->filial])) continue;
-			$obj = $objectList[$sourceObject->filial];
-			if (!isset($obj->clientsWaiting)) {
-				$obj->clientsWaiting = 0;
-			};
-			if (!isset($obj->clientsServing)) {
-				$obj->clientsServing = 0;
-			};
-			if (!isset($obj->numberOfCases)) {
-				$obj->numberOfCases = 0;
-			};
+			$eqItem = null;
+			if (!isset($filialList[$dbEqItem->filial])) continue;
+			$filial = $filialList[$dbEqItem->filial];
 
-			if ('WAIT' == $sourceObject->status)
+			if ('WAIT' == $dbEqItem->status)
 			{
-				if (!$sourceObject->remote_reg)
+				if (!$dbEqItem->remote_reg)
 				{
-					$obj->clientsWaiting++;
+					$filial->clientsWaiting++;
 				}
 			} else {
-				$obj->clientsServing++;
-			};
+				$filial->clientsServing++;
+			}
+			$filial->numberOfCases += $dbEqItem->number_of_cases;
+			$filial->totalWaitingTime += $dbEqItem->waiting_time;
 
-			$obj->numberOfCases += $sourceObject->number_of_cases;
 		}
 
+		foreach ($filialList as $filial)
+		{
+			if ($filial->countOfServed == 0)
+			{
+				$filial->averageServiceTime = 0;
+				continue;
+			}
+			$filial->averageServiceTime = $filial->totalServiceTime / $filial->countOfServed;
+			$filial->averageServiceTime = round($filial->averageServiceTime / 60000);
+			$filial->averageWaitingTime = round(($filial->totalWaitingTime / $filial->clientsServing) / 60);
+		}
 
-		return $objectList;
+		return $filialList;
 	}
 
 	/**
@@ -221,6 +214,10 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 					case('OFF'):
 						$winRecord->state = 'OFF';
 						break;
+					case('PAUSE'):
+						$winRecord->state = 'PAUSE';
+						break;
+
 					default:
 						$winRecord->state = 'OFF';
 				}
@@ -284,9 +281,12 @@ class EqmonitorModelEqmonitor extends JModelLegacy
 				$queueItem->ticket          = $prefix . $ticket->clientNum;
 				$queueItem->priority        = $ticket->priority;
 				$dtQueued                   = DateTime::createFromFormat($fmt, $ticket->regTime, $tz);
-				$queueItem->queued_at       = JFactory::getDate($dtQueued->getTimestamp())->toSql(true);
-				$queueItem->waiting_time    = 0;
-				$queueItem->remote_reg       = $ticket->remoteReg;
+				//$queueItem->queued_at       = JFactory::getDate($dtQueued->getTimestamp())->toSql(true);
+				$queueItem->queued_at       = $dtQueued->getTimestamp();
+				$queueItem->start_time      = $ticket->startTime / 1000;
+				$queueItem->waiting_time    = $ticket->startTime / 1000 - $dtQueued->getTimestamp();
+				if ($queueItem->waiting_time < 0) $queueItem->waiting_time = 0;
+				$queueItem->remote_reg      = $ticket->remoteReg;
 				$queueItem->queue           = '';
 				$queueItem->call_time       = $dt;
 				$queueItem->service_name    = $ticket->serviceName;

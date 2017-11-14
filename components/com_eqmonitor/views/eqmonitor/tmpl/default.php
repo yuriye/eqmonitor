@@ -40,11 +40,11 @@ echo $layout->render($data);
         <div class="filial">
 			<?php
 			echo "<b>$row->filial</b><br/>";
-			//echo "Всего окон: $row->cabs, работает окон: {$row->state['ON']}<br/>";
-			echo "Работает окон: {$row->state['ON']}<br/>";
+			echo "Всего окон: $row->cabs, работает: {$row->state['ON']}, перерыв: {$row->state['PAUSE']}<br/>";
 			$serving = $row->state['ON'] < $row->clientsServing ? $row->state['ON'] : $row->clientsServing;
-			if (isset($row->clientsServing)) echo "Сейчас обслуживается $serving чел.<br/>";
-			if (isset($row->clientsWaiting)) echo "Ожидают обслуживания $row->clientsWaiting чел.<br/>";
+			if (isset($row->clientsServing)) echo "Сейчас обслуживается $serving чел.";
+			if (isset($row->clientsWaiting)) echo ", ожидает обслуживания $row->clientsWaiting чел.<br/>";
+			echo "Среднее время ожидания $row->averageWaitingTime мин.<br/>";
 			echo "Среднее время обслуживания $row->averageServiceTime мин.<br/>";
 			//print_r($row);
 			echo '<br/>'; ?>
